@@ -96,4 +96,6 @@ type LocalRegistryHostingV1 struct {
 	// should contain instructions on how to diagnose broken or misconfigured
 	// registries.
 	Help string `yaml:"help,omitempty"`
+
+	UseHttpForDockerRegistry string `yaml:"use_http_for_docker_registry,omitempty"`
 }

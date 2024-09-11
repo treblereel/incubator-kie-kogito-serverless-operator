@@ -49,8 +49,15 @@ nodes:
         system-reserved: memory=4Gi
 containerdConfigPatches:
 - |-
-  [plugins."io.containerd.grpc.v1.cri".registry]
-    config_path = "/etc/containerd/certs.d"
+  [plugins."io.containerd.grpc.v1.cri"]
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."kind-registry:5000"]
+          endpoint = ["http://kind-registry:5000"]
+      [plugins."io.containerd.grpc.v1.cri".registry.configs]
+        [plugins."io.containerd.grpc.v1.cri".registry.configs."kind-registry:5000".tls]
+          insecure_skip_verify = true
+      config_path = "/etc/containerd/certs.d"
 EOF
 
 # 2. Wait for kube system pods to reach running state
@@ -65,7 +72,6 @@ ${container_engine} run \
   -d --restart=always -p "127.0.0.1:${reg_port}:5000" --network bridge --name "${reg_name}" \
   -v /tmp:/certs \
   registry:2
-  
 # 4. Connect the registry to the cluster network if not already connected
 # This allows kind to bootstrap the network but ensures they're on the same network
 if [ "$("${container_engine}" inspect -f='{{json .NetworkSettings.Networks.kind}}' "${reg_name}")" = 'null' ]; then
@@ -106,4 +112,5 @@ data:
   localRegistryHosting.v1: |
     hostFromClusterNetwork: "${IP_ADDRESS}:5000"
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
+    use_http_for_docker_registry: "true"
 EOF

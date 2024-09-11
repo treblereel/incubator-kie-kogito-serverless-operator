@@ -93,6 +93,8 @@ type LocalRegistryHostingV1 struct {
 	// should contain instructions on how to diagnose broken or misconfigured
 	// registries.
 	Help string `yaml:"help,omitempty"`
+	//TODO: Add more fields as needed
+	UseHttpForDockerRegistry string `yaml:"use_http_for_docker_registry,omitempty"`
 }
 
 const OperatorLockName = "kogito-serverless-lock"
