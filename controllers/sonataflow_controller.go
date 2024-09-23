@@ -28,7 +28,6 @@ import (
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 	profiles "github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/factory"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/validation"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
@@ -252,10 +251,10 @@ func (r *SonataFlowReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *SonataFlowReconciler) Validate(ctx context.Context, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error {
-	if sonataflow.Status.ObservedGeneration < sonataflow.Generation {
+	/*	if sonataflow.Status.ObservedGeneration < sonataflow.Generation {
 		if err := validation.Validate(ctx, r.Client, sonataflow, req); err != nil {
 			return err
 		}
-	}
+	}*/
 	return nil
 }
