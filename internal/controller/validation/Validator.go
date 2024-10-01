@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var validators = []Validator{ImageValidator{}}
+var validators = []Validator{ImageValidator{}, ImageUrlSanitizer{}}
 
 type Validator interface {
 	Validate(ctx context.Context, client client.Client, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error
@@ -31,9 +31,11 @@ type Validator interface {
 // validate the SonataFlow object, right now it's only check if workflow is in deployment has image declared as that image
 // is the same as the image in the SonataFlow object
 func Validate(ctx context.Context, client client.Client, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error {
-	for _, validator := range validators {
-		if err := validator.Validate(ctx, client, sonataflow, req); err != nil {
-			return err
+	if sonataflow.HasContainerSpecImage() {
+		for _, validator := range validators {
+			if err := validator.Validate(ctx, client, sonataflow, req); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

@@ -17,8 +17,10 @@ package validation
 import (
 	"archive/tar"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net/http"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/google/go-cmp/cmp"
@@ -35,26 +37,29 @@ type ImageValidator struct{}
 var workflowName = "deployments/app/workflow.sw.json"
 
 func (v ImageValidator) Validate(ctx context.Context, client client.Client, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error {
-	if sonataflow.HasContainerSpecImage() {
-		err := client.Get(ctx, req.NamespacedName, sonataflow)
-		equals, err := validateImage(sonataflow, sonataflow.Spec.PodTemplate.Container.Image)
-		if err != nil {
-			return err
-		}
-		if !equals {
-			return fmt.Errorf("Workflow, defined in the image %s doesn't match deployment workflow", sonataflow.Spec.PodTemplate.Container.Image)
-		}
+	equals, err := validateImage(ctx, sonataflow)
+	if err != nil {
+		return err
+	}
+	if !equals {
+		return fmt.Errorf("Workflow, defined in the image %s doesn't match deployment workflow", sonataflow.Spec.PodTemplate.Container.Image)
 	}
 	return nil
 }
 
-func validateImage(sonataflow *operatorapi.SonataFlow, image string) (bool, error) {
-	imageRef, err := name.ParseReference(image)
+func validateImage(ctx context.Context, sonataflow *operatorapi.SonataFlow) (bool, error) {
+	isInKindRegistry, _, err := ImageStoredInKindRegistry(ctx, sonataflow.Spec.PodTemplate.Container.Image)
 	if err != nil {
 		return false, err
 	}
 
-	ref, err := remote.Image(imageRef)
+	var ref v1.Image
+	if isInKindRegistry {
+		ref, err = kindRegistryImage(sonataflow)
+	} else {
+		ref, err = remoteImage(sonataflow)
+	}
+
 	if err != nil {
 		return false, err
 	}
@@ -70,6 +75,43 @@ func validateImage(sonataflow *operatorapi.SonataFlow, image string) (bool, erro
 	}
 
 	return cmp.Equal(workflowDockerImage, sonataflow.Spec.Flow), nil
+}
+
+func remoteImage(sonataflow *operatorapi.SonataFlow) (v1.Image, error) {
+	fmt.Println("remoteImage")
+
+	imageRef, err := name.ParseReference(sonataflow.Spec.PodTemplate.Container.Image)
+	if err != nil {
+		return nil, err
+	}
+
+	ref, err := remote.Image(imageRef)
+	if err != nil {
+		return nil, err
+	}
+	return ref, nil
+}
+
+func kindRegistryImage(sonataflow *operatorapi.SonataFlow) (v1.Image, error) {
+	fmt.Println("kindRegistryImage")
+
+	transportOptions := []remote.Option{
+		remote.WithTransport(&http.Transport{
+			Proxy:           http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}),
+	}
+
+	imageRef, err := name.ParseReference(sonataflow.Spec.PodTemplate.Container.Image, name.Insecure)
+	if err != nil {
+		return nil, err
+	}
+
+	ref, err := remote.Image(imageRef, transportOptions...)
+	if err != nil {
+		return nil, err
+	}
+	return ref, nil
 }
 
 func readLayers(image v1.Image, workflow string) (*tar.Reader, error) {
