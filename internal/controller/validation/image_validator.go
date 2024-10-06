@@ -32,11 +32,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type ImageValidator struct{}
+type imageValidator struct{}
 
-var workflowName = "deployments/app/workflow.sw.json"
+const workflowName = "deployments/app/workflow.sw.json"
 
-func (v ImageValidator) Validate(ctx context.Context, client client.Client, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error {
+func (v *imageValidator) Validate(ctx context.Context, client client.Client, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error {
 	equals, err := validateImage(ctx, sonataflow)
 	if err != nil {
 		return err
@@ -45,6 +45,10 @@ func (v ImageValidator) Validate(ctx context.Context, client client.Client, sona
 		return fmt.Errorf("Workflow, defined in the image %s doesn't match deployment workflow", sonataflow.Spec.PodTemplate.Container.Image)
 	}
 	return nil
+}
+
+func NewImageValidator() Validator {
+	return &imageValidator{}
 }
 
 func validateImage(ctx context.Context, sonataflow *operatorapi.SonataFlow) (bool, error) {
@@ -64,12 +68,12 @@ func validateImage(ctx context.Context, sonataflow *operatorapi.SonataFlow) (boo
 		return false, err
 	}
 
-	reader, err := readLayers(ref, workflowName)
+	reader, err := readWorkflowSpecLayer(ref, workflowName)
 	if err != nil {
 		return false, err
 	}
 
-	workflowDockerImage, err := jsonFromDockerImage(reader)
+	workflowDockerImage, err := workflowSpecFromDockerImage(reader)
 	if err != nil {
 		return false, err
 	}
@@ -114,14 +118,14 @@ func kindRegistryImage(sonataflow *operatorapi.SonataFlow) (v1.Image, error) {
 	return ref, nil
 }
 
-func readLayers(image v1.Image, workflow string) (*tar.Reader, error) {
+func readWorkflowSpecLayer(image v1.Image, workflow string) (*tar.Reader, error) {
 	layers, err := image.Layers()
 	if err != nil {
 		return nil, err
 	}
 
 	for i := len(layers) - 1; i >= 0; i-- {
-		if reader, err := readLayer(layers[i], workflow); err == nil && reader != nil {
+		if reader, err := findWorkflowSpecLayer(layers[i], workflow); err == nil && reader != nil {
 			return reader, nil
 		} else if err != nil {
 			return nil, err
@@ -130,7 +134,7 @@ func readLayers(image v1.Image, workflow string) (*tar.Reader, error) {
 	return nil, fmt.Errorf("file not found %s in docker image", workflow)
 }
 
-func readLayer(layer v1.Layer, workflow string) (*tar.Reader, error) {
+func findWorkflowSpecLayer(layer v1.Layer, workflow string) (*tar.Reader, error) {
 	uncompressedLayer, err := layer.Uncompressed()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get uncompressed layer: %v", err)
@@ -155,7 +159,7 @@ func readLayer(layer v1.Layer, workflow string) (*tar.Reader, error) {
 	return nil, nil
 }
 
-func jsonFromDockerImage(reader io.Reader) (operatorapi.Flow, error) {
+func workflowSpecFromDockerImage(reader io.Reader) (operatorapi.Flow, error) {
 	data, err := io.ReadAll(reader)
 	workflow := &operatorapi.Flow{}
 	if err = yaml.Unmarshal(data, workflow); err != nil {
