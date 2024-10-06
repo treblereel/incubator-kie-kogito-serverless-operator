@@ -41,7 +41,6 @@ COPY --from=builder --chown=185 /home/kogito/kogito-sw-base/target/quarkus-app/l
 COPY --from=builder --chown=185 /home/kogito/kogito-sw-base/target/quarkus-app/*.jar /deployments/
 COPY --from=builder --chown=185 /home/kogito/kogito-sw-base/target/quarkus-app/app/ /deployments/app/
 COPY --from=builder --chown=185 /home/kogito/kogito-sw-base/target/quarkus-app/quarkus/ /deployments/quarkus/
-COPY --from=builder --chown=185 /home/kogito/kogito-sw-base/target/classes/workflow.sw.json /deployments/app/workflow.sw.json
 
 EXPOSE 8080
 USER 185
