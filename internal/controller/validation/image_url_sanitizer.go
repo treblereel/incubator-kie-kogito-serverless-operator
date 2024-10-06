@@ -25,9 +25,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type ImageUrlSanitizer struct{}
+type imageUrlSanitizer struct{}
 
-func (v ImageUrlSanitizer) Validate(ctx context.Context, client client.Client, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error {
+func (v *imageUrlSanitizer) Validate(ctx context.Context, client client.Client, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error {
 	isInKindRegistry, kindRegistryUrl, err := ImageStoredInKindRegistry(ctx, sonataflow.Spec.PodTemplate.Container.Image)
 	if err != nil {
 		return err
@@ -62,4 +62,8 @@ func (v ImageUrlSanitizer) Validate(ctx context.Context, client client.Client, s
 	}
 
 	return nil
+}
+
+func NewImageUrlSanitizer() Validator {
+	return &imageUrlSanitizer{}
 }
