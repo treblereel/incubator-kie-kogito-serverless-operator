@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func KindRegistryName(ctx context.Context) (string, error) {
+var kindRegistryName = func(ctx context.Context) (string, error) {
 	config := corev1.ConfigMap{}
 	err := utils.GetClient().Get(ctx, client.ObjectKey{Namespace: "kube-public", Name: "local-registry-hosting"}, &config)
 	if err == nil {
@@ -43,6 +43,7 @@ func KindRegistryName(ctx context.Context) (string, error) {
 }
 
 func checkUrlHasPrefix(input string) bool {
+	input = strings.ToLower(input)
 	prefixes := []string{"http://", "https://", "docker://"}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(input, prefix) {
@@ -69,7 +70,7 @@ func hostAndPortFromUri(input string) (string, string, error) {
 
 	// check if host is ip address
 	if net.ParseIP(host) == nil {
-		hosts, err := net.LookupIP(host)
+		hosts, err := resolve(host)
 		if err != nil {
 			return "", "", fmt.Errorf("Failed to resolve domain: %v\n", err)
 		}
@@ -82,8 +83,8 @@ func hostAndPortFromUri(input string) (string, string, error) {
 	return host, port, nil
 }
 
-func ImageStoredInKindRegistry(ctx context.Context, image string) (bool, string, error) {
-	kindRegistryHostAndPort, err := KindRegistryName(ctx)
+func imageStoredInKindRegistry(ctx context.Context, image string) (bool, string, error) {
+	kindRegistryHostAndPort, err := kindRegistryName(ctx)
 	if err != nil {
 		return false, "", fmt.Errorf("Failed to get kind registry name: %v\n", err)
 	}
@@ -109,4 +110,8 @@ func getipv4(ips []net.IP) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("No ipv4 address found")
+}
+
+var resolve = func(host string) ([]net.IP, error) {
+	return net.LookupIP(host)
 }

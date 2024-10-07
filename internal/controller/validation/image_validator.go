@@ -52,7 +52,7 @@ func NewImageValidator() Validator {
 }
 
 func validateImage(ctx context.Context, sonataflow *operatorapi.SonataFlow) (bool, error) {
-	isInKindRegistry, _, err := ImageStoredInKindRegistry(ctx, sonataflow.Spec.PodTemplate.Container.Image)
+	isInKindRegistry, _, err := imageStoredInKindRegistry(ctx, sonataflow.Spec.PodTemplate.Container.Image)
 	if err != nil {
 		return false, err
 	}
@@ -82,8 +82,6 @@ func validateImage(ctx context.Context, sonataflow *operatorapi.SonataFlow) (boo
 }
 
 func remoteImage(sonataflow *operatorapi.SonataFlow) (v1.Image, error) {
-	fmt.Println("remoteImage")
-
 	imageRef, err := name.ParseReference(sonataflow.Spec.PodTemplate.Container.Image)
 	if err != nil {
 		return nil, err
@@ -97,8 +95,6 @@ func remoteImage(sonataflow *operatorapi.SonataFlow) (v1.Image, error) {
 }
 
 func kindRegistryImage(sonataflow *operatorapi.SonataFlow) (v1.Image, error) {
-	fmt.Println("kindRegistryImage")
-
 	transportOptions := []remote.Option{
 		remote.WithTransport(&http.Transport{
 			Proxy:           http.ProxyFromEnvironment,
