@@ -28,7 +28,7 @@ import (
 type imageUrlSanitizer struct{}
 
 func (v *imageUrlSanitizer) Validate(ctx context.Context, client client.Client, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error {
-	isInKindRegistry, kindRegistryUrl, err := ImageStoredInKindRegistry(ctx, sonataflow.Spec.PodTemplate.Container.Image)
+	isInKindRegistry, kindRegistryUrl, err := imageStoredInKindRegistry(ctx, sonataflow.Spec.PodTemplate.Container.Image)
 	if err != nil {
 		return err
 	}

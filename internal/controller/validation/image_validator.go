@@ -52,7 +52,7 @@ func NewImageValidator() Validator {
 }
 
 func validateImage(ctx context.Context, sonataflow *operatorapi.SonataFlow) (bool, error) {
-	isInKindRegistry, _, err := ImageStoredInKindRegistry(ctx, sonataflow.Spec.PodTemplate.Container.Image)
+	isInKindRegistry, _, err := imageStoredInKindRegistry(ctx, sonataflow.Spec.PodTemplate.Container.Image)
 	if err != nil {
 		return false, err
 	}
