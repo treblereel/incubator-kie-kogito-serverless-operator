@@ -455,3 +455,5 @@ delete-cluster: install-kind
 workflow_test_image_build-and-push:
 	docker build -t localhost:5001/testimage/sonataflow-minimal-example:0.1 ./test/testdata/workflow/docker-image/
 	docker push localhost:5001/testimage/sonataflow-minimal-example:0.1
+	docker build --build-arg WORKFLOW_FILE=broken-workflow.sw.json -t localhost:5001/testimage/sonataflow-minimal-example-broken:0.1 ./test/testdata/workflow/docker-image/
+	docker push localhost:5001/testimage/sonataflow-minimal-example-broken:0.1
