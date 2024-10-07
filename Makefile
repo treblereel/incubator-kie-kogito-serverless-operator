@@ -115,7 +115,7 @@ fmt: ## Run go fmt against code.
 .PHONY: vet
 vet: ## Run go vet against code.
 	@echo "🔍 Running go vet..."
-	@go vet ./... > /dev/null 2>&1
+	@go vet ./...
 
 .PHONY: test
 test: manifests generate envtest test-api ## Run tests.
