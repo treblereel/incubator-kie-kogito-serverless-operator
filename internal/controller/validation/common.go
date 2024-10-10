@@ -28,18 +28,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var kindRegistryName = func(ctx context.Context) (string, error) {
+var kindRegistryName = func(ctx context.Context) string {
 	config := corev1.ConfigMap{}
 	err := utils.GetClient().Get(ctx, client.ObjectKey{Namespace: "kube-public", Name: "local-registry-hosting"}, &config)
 	if err == nil {
 		if data, ok := config.Data["localRegistryHosting.v1"]; ok {
 			result := platform.LocalRegistryHostingV1{}
 			if err := yaml.Unmarshal([]byte(data), &result); err == nil {
-				return result.HostFromClusterNetwork, nil
+				return result.HostFromClusterNetwork
 			}
 		}
 	}
-	return "", nil
+	return ""
 }
 
 func checkUrlHasPrefix(input string) bool {
@@ -54,6 +54,7 @@ func checkUrlHasPrefix(input string) bool {
 }
 
 func hostAndPortFromUri(input string) (string, string, error) {
+	fmt.Println("?", input)
 	// we need to check if the input has a prefix, if not we add http://
 	// because the url.Parse function requires a scheme
 	if !checkUrlHasPrefix(input) {
@@ -84,9 +85,9 @@ func hostAndPortFromUri(input string) (string, string, error) {
 }
 
 func imageStoredInKindRegistry(ctx context.Context, image string) (bool, string, error) {
-	kindRegistryHostAndPort, err := kindRegistryName(ctx)
-	if err != nil {
-		return false, "", fmt.Errorf("Failed to get kind registry name: %v\n", err)
+	kindRegistryHostAndPort := kindRegistryName(ctx)
+	if kindRegistryHostAndPort == "" {
+		return false, "", nil
 	}
 	kindRegistryHost, kindRegistryPort, err := hostAndPortFromUri(kindRegistryHostAndPort)
 	if err != nil {
